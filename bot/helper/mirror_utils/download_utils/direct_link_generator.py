@@ -10,6 +10,11 @@ for original authorship. """
 
 import requests
 import re
+import os
+from time import sleep
+from selenium import webdriver
+#from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 
 from base64 import b64decode
 from urllib.parse import urlparse, unquote
@@ -504,6 +509,10 @@ def unified(url: str) -> str:
     if urlparse(url).netloc == 'appdrive.in':
         flink = info_parsed['gdrive_link']
         return flink
+      
+    elif urlparse(url).netloc == 'gdflix.pro':
+        flink = info_parsed['gdrive_link']
+        return flink
     
     elif urlparse(url).netloc == 'driveapp.in':
         res = client.get(info_parsed['gdrive_link'])
@@ -535,7 +544,11 @@ def parse_info(res, url):
     return info_parsed
   
 def udrive(url: str) -> str:
-    client = cloudscraper.create_scraper(delay=10, browser='chrome')
+    if 'katdrive' in url:
+      client = requests.Session()
+    else:
+      client = cloudscraper.create_scraper(delay=10, browser='chrome')
+    
     if 'hubdrive' in url:
         client.cookies.update({'crypt': HUBDRIVE_CRYPT})
     if 'drivehub' in url:
@@ -641,3 +654,24 @@ def sharer_pw(url, forced_login=False):
         return flink
     except:
         raise DirectDownloadLinkException("ERROR! File Not Found or User rate exceeded !!")
+        
+ 
+def drivehubs(url: str) -> str:
+    os.chmod('/usr/src/app/chromedriver', 755)
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    wd = webdriver.Chrome('/usr/src/app/chromedriver', chrome_options=chrome_options)
+    
+    Ok = wd.get(url)
+    wd.find_element(By.XPATH, '//button[@id="fast"]').click()
+    sleep(15)
+    wd.switch_to.window(wd.window_handles[-1])
+    flink = wd.current_url
+    wd.close()
+    
+    if 'drive.google.com' in flink:
+      return flink
+    else:
+      raise DirectDownloadLinkException(f"ERROR! Maybe Direct Download is not working for this file !\n Retrived URL : {flink}")
